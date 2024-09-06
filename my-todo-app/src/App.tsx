@@ -19,17 +19,22 @@ type Todo = {
 
 // API functions
 const fetchTodos = async (): Promise<Todo[]> => {
-  const response = await fetch("/api/todos"); // replace with your API
+  const response = await fetch(
+    "https://66dadc89f47a05d55be63d23.mockapi.io/tasks"
+  );
   return response.json();
 };
 
 const createTodo = async (text: string): Promise<Todo> => {
   try {
-    const response = await fetch("/api/todos", {
-      method: "POST",
-      body: JSON.stringify({ text }),
-      headers: { "Content-Type": "application/json" },
-    });
+    const response = await fetch(
+      "https://66dadc89f47a05d55be63d23.mockapi.io/tasks",
+      {
+        method: "POST",
+        body: JSON.stringify({ text }),
+        headers: { "Content-Type": "application/json" },
+      }
+    );
     if (!response.ok) {
       throw new Error(`Error adding todo: ${response.status}`);
     }
@@ -48,11 +53,14 @@ const updateTodo = async ({
   done: boolean;
 }): Promise<Todo> => {
   try {
-    const response = await fetch(`/api/todos/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify({ done }),
-      headers: { "Content-Type": "application/json" },
-    });
+    const response = await fetch(
+      `https://66dadc89f47a05d55be63d23.mockapi.io/tasks/${id}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ done }),
+        headers: { "Content-Type": "application/json" },
+      }
+    );
     if (!response.ok) {
       throw new Error(`Error updating todo: ${response.status}`);
     }
@@ -65,9 +73,12 @@ const updateTodo = async ({
 
 const deleteTodo = async (id: number): Promise<void> => {
   try {
-    const response = await fetch(`/api/todos/${id}`, {
-      method: "DELETE",
-    });
+    const response = await fetch(
+      `https://66dadc89f47a05d55be63d23.mockapi.io/tasks/${id}`,
+      {
+        method: "DELETE",
+      }
+    );
     if (!response.ok) {
       throw new Error(`Error deleting todo: ${response.status}`);
     }
