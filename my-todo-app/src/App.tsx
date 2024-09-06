@@ -24,12 +24,20 @@ const fetchTodos = async (): Promise<Todo[]> => {
 };
 
 const createTodo = async (text: string): Promise<Todo> => {
-  const response = await fetch("/api/todos", {
-    method: "POST",
-    body: JSON.stringify({ text, done: false }),
-    headers: { "Content-Type": "application/json" },
-  });
-  return response.json();
+  try {
+    const response = await fetch("/api/todos", {
+      method: "POST",
+      body: JSON.stringify({ text }),
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) {
+      throw new Error(`Error adding todo: ${response.status}`);
+    }
+    return response.json();
+  } catch (error) {
+    console.error("Error adding todo:", error);
+    throw error;
+  }
 };
 
 const updateTodo = async ({
@@ -39,21 +47,35 @@ const updateTodo = async ({
   id: number;
   done: boolean;
 }): Promise<Todo> => {
-  const response = await fetch(`/api/todos/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify({ done }),
-    headers: { "Content-Type": "application/json" },
-  });
-  return response.json();
+  try {
+    const response = await fetch(`/api/todos/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ done }),
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) {
+      throw new Error(`Error updating todo: ${response.status}`);
+    }
+    return response.json();
+  } catch (error) {
+    console.error("Error updating todo:", error);
+    throw error;
+  }
 };
 
 const deleteTodo = async (id: number): Promise<void> => {
-  await fetch(`/api/todos/${id}`, {
-    method: "DELETE",
-  });
-};
-
-// React Component
+  try {
+    const response = await fetch(`/api/todos/${id}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      throw new Error(`Error deleting todo: ${response.status}`);
+    }
+  } catch (error) {
+    console.error("Error deleting todo:", error);
+    throw error;
+  }
+}; // React Component
 const TodoApp: React.FC = () => {
   const [newTask, setNewTask] = useState("");
   const queryClient = useQueryClient();
@@ -65,28 +87,34 @@ const TodoApp: React.FC = () => {
     isError,
     error,
   } = useQuery<Todo[], Error>(["todos"], fetchTodos, {
-    staleTime: 1000, // кеш даних оновлюється кожну секунду
+    staleTime: 1000,
   });
 
-  const addMutation = useMutation<string, Error, string>(createTodo, {
-    onSuccess: () => queryClient.invalidateQueries(["todos"]),
-    onError: (error) => console.error("Error creating todo:", error),
+  const addMutation = useMutation<string, Error, string, unknown>({
+    mutationFn: async (text: string) => {
+      const response = await createTodo(text);
+      return response.id.toString(); // Return the ID of the newly created todo as a string
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["todos"] }),
+    onError: (error: Error) => console.error("Error adding todo:", error),
   });
 
   const updateMutation = useMutation<
-    { id: number; done: boolean },
+    Todo,
     Error,
-    { id: number; done: boolean }
-  >(updateTodo, {
-    onSuccess: () => queryClient.invalidateQueries(["todos"]),
-    onError: (error) => console.error("Error updating todo:", error),
+    { id: number; done: boolean },
+    unknown
+  >({
+    mutationFn: updateTodo,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["todos"] }),
+    onError: (error: Error) => console.error("Error updating todo:", error),
   });
 
-  const deleteMutation = useMutation<number, Error, number>(deleteTodo, {
-    onSuccess: () => queryClient.invalidateQueries(["todos"]),
-    onError: (error) => console.error("Error deleting todo:", error),
+  const deleteMutation = useMutation<void, Error, number, unknown>({
+    mutationFn: deleteTodo,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["todos"] }),
+    onError: (error: Error) => console.error("Error deleting todo:", error),
   });
-
   const handleAdd = () => {
     if (newTask.length > 1) {
       addMutation.mutate(newTask);
@@ -113,28 +141,29 @@ const TodoApp: React.FC = () => {
         Add Task
       </Button>
       <List>
-        {todos.map((todo) => (
-          <ListItem key={todo.id}>
-            <ListItemText
-              primary={todo.text}
-              style={{ textDecoration: todo.done ? "line-through" : "none" }}
-            />
-            <IconButton
-              edge="end"
-              onClick={() =>
-                updateMutation.mutate({ id: todo.id, done: !todo.done })
-              }
-            >
-              <CheckIcon color={todo.done ? "primary" : "inherit"} />
-            </IconButton>
-            <IconButton
-              edge="end"
-              onClick={() => deleteMutation.mutate(todo.id)}
-            >
-              <DeleteIcon />
-            </IconButton>
-          </ListItem>
-        ))}
+        {Array.isArray(todos) &&
+          todos.map((todo: Todo) => (
+            <ListItem key={todo.id}>
+              <ListItemText
+                primary={todo.text}
+                style={{ textDecoration: todo.done ? "line-through" : "none" }}
+              />
+              <IconButton
+                edge="end"
+                onClick={() =>
+                  updateMutation.mutate({ id: todo.id, done: !todo.done })
+                }
+              >
+                <CheckIcon color={todo.done ? "primary" : "inherit"} />
+              </IconButton>
+              <IconButton
+                edge="end"
+                onClick={() => deleteMutation.mutate(todo.id)}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </ListItem>
+          ))}
       </List>
     </div>
   );
