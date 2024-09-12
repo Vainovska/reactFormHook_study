@@ -1,0 +1,31 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  gap: 24px;
+  width: 100%;
+  max-width: 420px;
+}
+.list__title {
+  border-bottom: 1px solid #fff;
+  padding-bottom: 4px;
+  font-size: 32px;
+}
+.list__content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cart-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cart-item__title {
+  font-size: 24px;
+}
+.cart-item__block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
